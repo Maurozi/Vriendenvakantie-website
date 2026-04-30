@@ -1,58 +1,54 @@
-# Het Vriendenvakantie Archief
+# Project "Vriendenvakantie Archief" - Technisch Ontwerpplan
+Dit document dient als de centrale README voor het "Vriendenvakantie Archief" project. Het beschrijft de volledige technische architectuur en workflow voor het bouwen van een robuuste, afgeschermde en serverless galerij-website met behulp van Google Cloud en Firebase.
+## 1. Doel van het Project
+Het veilig en kostenefficiënt hosten van 40 jaar aan foto's en video's (3-5 TB) van een hechte vriendengroep. De website is **volledig afgeschermd** van het publieke internet. Toegang wordt exclusief verleend via een gedeelde sleutel (voor gasten) of via persoonlijke Google-accounts (voor beheerders binnen de vriendengroep).
+## 2. Gebruikte Tech Stack (Serverless)
+### Frontend
+ * **Framework:** React / Next.js of Vue.js
+ * **Hosting:** **Firebase Hosting** (gratis, snel via CDN, en direct gekoppeld aan de backend).
+### Database & Opslag (Firebase)
+ * **Database:** **Firestore (NoSQL)** voor het opslaan van de metadata (jaartallen, locaties, bestand-URL's en tags). Werkt op basis van snelle documenten en subcollecties.
+ * **Opslag:** **Google Cloud Storage (Firebase Storage)** voor het veilig hosten van de daadwerkelijke .jpg, .webp en zware .mp4 videobestanden.
+ * **Beveiliging:** **Firebase Security Rules** dwingen de autorisatie direct op database-niveau af, wat een aparte backend overbodig maakt.
+### Authenticatie (Firebase Auth)
+ * **Email & Wachtwoord Login:** Gebruikt voor het 'Gedeelde Gast-Account' (de geheime toegangssleutel).
+ * **Google Login:** Gebruikt voor de beheerdersrechten (de originele vriendengroep).
+## 3. Workflows & Beveiligingsmodel
+De applicatie kent drie toegangsniveaus, waarbij de hoogste niveaus overschrijven wat de lagere mogen.
+### A. De Onbekende Bezoeker (Geen Toegang)
+ * **Toegang:** Geen. Het publieke internet kan de database niet benaderen.
+ * **Weergave:** De bezoeker ziet uitsluitend een landingspagina met één invoerveld: "Voer de geheime sleutel in".
+### B. De Gast (Leestoegang via Sleutel)
+Mensen buiten de directe vriendengroep met wie de link en de sleutel gedeeld wordt.
+ 1. **Login Proces:** De gast vult de geheime sleutel in op de landingspagina.
+ 2. **Achter de schermen:** De frontend logt op de achtergrond in bij Firebase Auth via een onzichtbaar algemeen account (bijv. gast@vriendenvakantie.nl) met de ingevulde sleutel als wachtwoord.
+ 3. **Rechten:** De gast krijgt een geldige Firebase sessie. De Security Rules geven nu read-rechten vrij. De gast kan de hele galerij bekijken, maar de admin-functies blijven verborgen.
+### C. De Vriend (Admin Toegang via Google)
+De kerngroep die de galerij beheert.
+ 1. **Login Proces:** De vriend klikt op de verborgen "Admin Login" knop en logt in met zijn persoonlijke Google-account (Gmail).
+ 2. **Autorisatie:** De Firebase Security Rules controleren of het e-mailadres in de *hardcoded* whitelist staat (bijv. in een isVriend() functie in de regels).
+ 3. **Rechten:** De vriend heeft nu read, create, update en delete rechten op de gehele database. In de frontend (het ingebouwde Admin Paneel) verschijnen de knoppen om nieuwe vakanties aan te maken en media te uploaden/verwijderen.
+## 4. Databasestructuur (Firestore)
+Om kosten te minimaliseren en laadtijden te optimaliseren, wordt er gebruik gemaakt van subcollecties.
+```json
+// Collectie: vacations
+{
+  "1998_italie": {
+    "year": 1998,
+    "location": "Toscane, Italië",
+    "title": "Zomervakantie 1998",
+    // Subcollectie: media (Pas ingeladen wanneer gebruiker de vakantie opent)
+    "media": [
+      { "type": "photo", "url": "...", "timestamp": "..." },
+      { "type": "video", "url": "...", "timestamp": "..." }
+    ]
+  }
+}
 
-Dit document dient als de centrale README voor het project. Het beschrijft de volledige technische architectuur en workflow voor het bouwen van een robuuste, schaalbare en professionele vakantie-galerij website met behulp van AWS (Amazon Web Services).
-
-## 1. Gebruikte AWS Services
-
-### Frontend & Hosting
-
- * **AWS Amplify:** Wordt gebruikt voor het automatisch bouwen en hosten van de frontend applicatie (React, Vue of Next.js) rechtstreeks vanuit de GitHub repository. Het biedt CI/CD en SSL-certificaten out-of-the-box.
-
- * **Amazon Route 53:** Voor het beheer van de domeinnaam en de DNS-routering naar de Amplify-omgeving.
-
-### Gebruikersbeheer & Beveiliging
-
- * **Amazon Cognito:** Regelt de volledige authenticatie-flow (aanmelden, inloggen, wachtwoordherstel). Dit zorgt ervoor dat de 3-5 TB aan privéfoto's en video's alleen toegankelijk zijn voor geautoriseerde familieleden.
-
-### Opslag & Distributie
-
- * **Amazon S3 (Simple Storage Service):** De primaire opslag voor alle media.
-
-   * Er wordt gebruik gemaakt van de **S3 Standard-IA (Infrequent Access)** opslagklasse voor een optimale balans tussen kosten en toegangssnelheid voor dit archief.
-
- * **Amazon CloudFront (CDN):** Een wereldwijd Content Delivery Network dat de media bestanden (vooral de zware video's) met hoge snelheid en lage latentie streamt. Dit voorkomt buffering en verlaagt de belasting op de S3 bucket.
-
-### Backend & API
-
- * **Amazon API Gateway:** Fungeert als de beveiligde 'voordeur' voor de frontend om te communiceren met de backend.
-
- * **AWS Lambda:** Serverless Python functies die de logica uitvoeren (zoals het valideren van tokens en het ophalen van metadata) zonder dat er servers 24/7 aan hoeven te staan.
-
- * **Amazon DynamoDB:** Een snelle NoSQL-database voor het opslaan van de metadata per bestand (S3-paden, jaartallen, locaties, tags en bestandstypes).
-
-## 2. Workflows
-
-### A. Media Ingestie & Upload (Python Script)
-
- 1. **Lokale Indexering:** Een Python script doorloopt de lokale mappenstructuur op de computer.
- 2. **Directe Upload:** Het script uploadt de originele bestanden via de Boto3 library rechtstreeks naar de S3 bucket.
- 3. **Metadata Registratie:** Na een succesvolle upload schrijft het script automatisch de relevante metadata (bestandsnaam, jaar, locatie) naar de DynamoDB tabel.
-
-### B. Authenticatie Workflow
-
- 1. De gebruiker bezoekt de website (Amplify).
- 2. De frontend verwijst de gebruiker naar de door Cognito gehoste login-interface.
- 3. Na inloggen ontvangt de browser een beveiligde JWT-token die wordt gebruikt voor alle API-verzoeken.
-### C. Weergave van de Galerij
- 1. **Verzoek:** De frontend vraagt aan de API Gateway om een lijst met media voor een specifiek jaar.
- 2. **Verwerking:** Een Lambda functie controleert de rechten en haalt de metadata op uit DynamoDB.
- 3. **URL Generatie:** De Lambda functie geeft de CloudFront URL's terug aan de applicatie.
- 4. **Streaming:** De browser laadt de media direct via CloudFront voor een optimale gebruikerservaring.
-
-## 3. Veiligheid en Optimalisatie
-
- * **IAM Roles:** Strikt beheer van rechten binnen AWS via het 'Least Privilege' principe.
-
- * **S3 Lifecycle Policies:** Automatische regels die bestanden na verloop van tijd naar nog goedkopere opslaglagen (zoals S3 Glacier) kunnen verplaatsen als ze zelden worden bekeken.
-
- * **CloudFront Caching:** Minimaliseert data-transfer kosten en verbetert de laadtijden voor herhaalde bezoeken.
+```
+*Gouden regel voor de frontend:* De UI maakt gebruik van **paginatie** (infinite scroll) om te voorkomen dat duizenden documenten tegelijkertijd worden opgehaald, wat database-reads bespaart.
+## 5. Media Ingestie & Optimalisatie
+Voor de initiële lading van 3-5 TB aan archiefmateriaal:
+ 1. Lokale verwerking (compressie naar WebP/MP4) is sterk aanbevolen om opslagkosten te verlagen.
+ 2. Initiele upload kan via een Python-script (firebase-admin SDK) of handmatig via het nieuw te bouwen Admin Paneel door de vriendengroep.
+ 3. Firebase Extensions (bijv. *Resize Images*) kunnen worden ingezet om automatisch kleine thumbnails te genereren voor snellere laadtijden van het overzicht.
