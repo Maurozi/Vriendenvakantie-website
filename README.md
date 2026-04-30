@@ -1,4 +1,4 @@
-# Project "Vriendenvakantie Archief" - Technisch Ontwerpplan
+# Het Vriendenvakantie Archief - Technisch Ontwerpplan
 Dit document dient als de centrale README voor het "Vriendenvakantie Archief" project. Het beschrijft de volledige technische architectuur en workflow voor het bouwen van een robuuste, afgeschermde en serverless galerij-website met behulp van Google Cloud en Firebase.
 ## 1. Doel van het Project
 Het veilig en kostenefficiënt hosten van 40 jaar aan foto's en video's (3-5 TB) van een hechte vriendengroep. De website is **volledig afgeschermd** van het publieke internet. Toegang wordt exclusief verleend via een gedeelde sleutel (voor gasten) of via persoonlijke Google-accounts (voor beheerders binnen de vriendengroep).
