@@ -1,6 +1,6 @@
-# Project "Vakantie Archief" - Technisch Ontwerpplan
+# Het Vriendenvakantie Archief
 
-Dit document dient als de centrale README voor het "Vakantie Archief" project. Het beschrijft de volledige technische architectuur en workflow voor het bouwen van een robuuste, schaalbare en professionele vakantie-galerij website met behulp van AWS (Amazon Web Services).
+Dit document dient als de centrale README voor het project. Het beschrijft de volledige technische architectuur en workflow voor het bouwen van een robuuste, schaalbare en professionele vakantie-galerij website met behulp van AWS (Amazon Web Services).
 
 ## 1. Gebruikte AWS Services
 
