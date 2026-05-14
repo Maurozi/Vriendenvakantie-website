@@ -7,6 +7,7 @@ export default defineConfig({
         laravel({
             input: 'resources/js/app.js',
             refresh: true,
+            detectTls: 'vriendenvakantie-website.test',
         }),
         vue({
             template: {
@@ -17,4 +18,10 @@ export default defineConfig({
             },
         }),
     ],
+    server: {
+        host: 'vriendenvakantie-website.test',
+        hmr: {
+            host: 'vriendenvakantie-website.test',
+        },
+    },
 });
